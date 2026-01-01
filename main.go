@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/crystalix007/deskew/leptonica"
+	"github.com/Crystalix007/deskew/leptonica"
 	"github.com/spf13/cobra"
 )
 

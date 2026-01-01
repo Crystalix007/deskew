@@ -1,4 +1,4 @@
-module github.com/crystalix007/deskew
+module github.com/Crystalix007/deskew
 
 go 1.25.1
 
