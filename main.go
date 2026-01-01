@@ -14,6 +14,7 @@ import (
 type flags struct {
 	leptonica.DeskewOptions
 
+	Crop           bool
 	OutputFilename string
 }
 
@@ -60,10 +61,9 @@ func main() {
 		"Angular resolution (tenths of a degree) used during the sweep",
 	)
 
-	cmd.Flags().Float64VarP(
+	cmd.Flags().Float64Var(
 		&flags.MinConfidence,
 		"min-confidence",
-		"c",
 		2.0,
 		"Minimum confidence required to apply the detected skew correction",
 	)
@@ -84,6 +84,14 @@ func main() {
 		"The output filename for the deskewed image",
 	)
 
+	cmd.Flags().BoolVarP(
+		&flags.Crop,
+		"crop",
+		"c",
+		false,
+		"Crop the image after deskewing to remove borders",
+	)
+
 	cmd.Execute()
 }
 
@@ -93,6 +101,7 @@ func run(_ context.Context, args flags, inputFilename string) error {
 	if err != nil {
 		return err
 	}
+
 	defer input.Close()
 
 	opts := leptonica.DeskewOptions{
@@ -103,15 +112,37 @@ func run(_ context.Context, args flags, inputFilename string) error {
 		BinarySearchReductionFactor: 1,
 	}
 
-	deskewed, angle, confidence, err := input.Deskew(opts)
+	output, angle, confidence, err := input.Deskew(opts)
 	if err != nil {
 		return err
 	}
 
-	defer deskewed.Close()
+	defer output.Close()
+
+	var box *leptonica.Box
+
+	if args.Crop {
+		var cropped *leptonica.Pix
+
+		cropped, box, err = output.CropImage(
+			50,
+			50,
+			leptonica.EDGE_CLEAN_SIDE_NOISE,
+			50,
+			50,
+			1.0,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Rotate the output image.
+		output.Close()
+		output = cropped
+	}
 
 	outputFormat := filenameToFormat(args.OutputFilename)
-	if err := deskewed.WriteToFile(args.OutputFilename, outputFormat); err != nil {
+	if err := output.WriteToFile(args.OutputFilename, outputFormat); err != nil {
 		return err
 	}
 
@@ -120,6 +151,7 @@ func run(_ context.Context, args flags, inputFilename string) error {
 		slog.Float64("angle", angle),
 		slog.Float64("confidence", confidence),
 		slog.String("output", args.OutputFilename),
+		slog.Any("cropped_box", box),
 	)
 	return nil
 }
