@@ -2,7 +2,7 @@ package leptonica
 
 /*
 #cgo pkg-config: lept
-#include <leptonica/allheaders.h>
+#include <allheaders.h>
 #include <stdlib.h>
 */
 import "C"
