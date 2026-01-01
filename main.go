@@ -84,9 +84,7 @@ func main() {
 		"The output filename for the deskewed image",
 	)
 
-	if err := cmd.Execute(); err != nil {
-		slog.Error("run failed", slog.Any("error", err))
-	}
+	cmd.Execute()
 }
 
 // run takes an image file path, and deskews the image to correct for any skew.
